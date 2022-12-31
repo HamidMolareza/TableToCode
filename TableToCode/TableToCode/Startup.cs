@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using OnRail;
 using OnRail.Extensions.OnFail;
 using OnRail.Extensions.OnSuccess;
@@ -20,9 +22,18 @@ public static class Startup {
             });
 
     private static async Task InnerMainAsync(string[] args) {
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .Build();
+
         using var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((_, services)
                 => services
+                    .AddSingleton<IConfiguration>(configuration)
+                    .AddLogging(loggingBuilder => loggingBuilder
+                        .SetMinimumLevel(LogLevel.Trace)
+                        .AddConsole())
                     .AddScoped<IProgram, ProgramService>()
                     .AddScoped<IHeaderParser, HeaderParser>())
             .Build();
