@@ -1,4 +1,4 @@
-namespace TableToCode;
+namespace TableToCode.Models;
 
 public class TableColumn {
     public TableColumn(string columnName, string columnType) {

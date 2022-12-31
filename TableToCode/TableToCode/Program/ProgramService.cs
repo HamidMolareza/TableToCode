@@ -1,22 +1,25 @@
+using Microsoft.Extensions.Logging;
 using OnRail;
 using OnRail.Extensions.Map;
 using OnRail.Extensions.OnSuccess;
 using OnRail.Extensions.Try;
-using TableToCode.Header;
+using TableToCode.DefinitionTable;
 
 namespace TableToCode.Program;
 
 public class ProgramService : IProgram {
-    private readonly IHeaderParser _headerParser;
+    private readonly IDefinitionTable _definitionTable;
+    private readonly ILogger<ProgramService> _logger;
 
-    public ProgramService(IHeaderParser headerParser) {
-        _headerParser = headerParser;
+    public ProgramService(ILogger<ProgramService> logger, IDefinitionTable definitionTable) {
+        _definitionTable = definitionTable;
+        _logger = logger;
     }
 
     public Result Run() =>
         GetTableFromConsole("Input your header table: ")
-            .OnSuccess(_headerParser.ParseHeader)
-            .OnSuccessTee(result => Console.WriteLine( /* TODO: Remove*/))
+            .OnSuccess(_definitionTable.ParseHeader)
+            .OnSuccessTee(result => _logger.LogInformation("This is a test log")) //TODO: Remove
             .Map();
 
     //TODO: Move to helper class

@@ -7,7 +7,7 @@ using OnRail.Extensions.OnFail;
 using OnRail.Extensions.OnSuccess;
 using OnRail.Extensions.Try;
 using OnRail.ResultDetails;
-using TableToCode.Header;
+using TableToCode.DefinitionTable;
 using TableToCode.Helpers;
 using TableToCode.Program;
 
@@ -36,7 +36,7 @@ public static class Startup {
                         .SetMinimumLevel(LogLevel.Trace)
                         .AddConsole())
                     .AddScoped<IProgram, ProgramService>()
-                    .AddScoped<IHeaderParser, HeaderParser>())
+                    .AddScoped<IDefinitionTable, DefinitionTableService>())
             .Build();
 
         RunProgram(host.Services)
