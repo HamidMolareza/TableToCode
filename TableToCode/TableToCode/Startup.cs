@@ -3,12 +3,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OnRail;
+using OnRail.Extensions.Must;
 using OnRail.Extensions.OnFail;
 using OnRail.Extensions.OnSuccess;
 using OnRail.Extensions.Try;
 using OnRail.ResultDetails;
+using TableToCode.DataTable;
 using TableToCode.DefinitionTable;
 using TableToCode.Helpers;
+using TableToCode.Models;
 using TableToCode.Program;
 
 namespace TableToCode;
@@ -28,15 +31,20 @@ public static class Startup {
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .Build();
 
+        var configsResult = configuration.Get<Configs>()
+            .MustNotNull<Configs>()
+            .OnFailThrowException();
+
         using var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((_, services)
                 => services
-                    .AddSingleton<IConfiguration>(configuration)
+                    .AddSingleton(configsResult.Value!)
                     .AddLogging(loggingBuilder => loggingBuilder
                         .SetMinimumLevel(LogLevel.Trace)
                         .AddConsole())
                     .AddScoped<IProgram, ProgramService>()
-                    .AddScoped<IDefinitionTable, DefinitionTableService>())
+                    .AddScoped<IDefinitionTable, DefinitionTableService>()
+                    .AddScoped<IDataTable, DataTableService>())
             .Build();
 
         RunProgram(host.Services)

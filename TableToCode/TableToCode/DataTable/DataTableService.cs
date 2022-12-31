@@ -1,39 +1,37 @@
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Configuration;
 using OnRail;
-using OnRail.Extensions.OnSuccess;
+using OnRail.Extensions.Try;
 using TableToCode.ErrorDetails;
-using TableToCode.Helpers;
+using TableToCode.Models;
 
 namespace TableToCode.DataTable;
 
 public class DataTableService : IDataTable {
-    private readonly IConfiguration _config;
+    private readonly Configs _config;
 
-    public DataTableService(IConfiguration configuration) {
-        _config = configuration;
+    public DataTableService(Configs configs) {
+        _config = configs;
     }
 
     public Result<List<List<string>>> Parse(List<string> tableRows) =>
-        Utility.GetDataDetectorRegex(_config)
-            .OnSuccess(regexPattern => {
-                var regex = new Regex(regexPattern);
-                var data = new List<List<string>>();
-                int? columnsCount = null;
+        TryExtensions.Try(() => {
+            var regex = new Regex(_config.DataDetectorRegex);
+            var data = new List<List<string>>();
+            int? columnsCount = null;
 
-                foreach (var tableRow in tableRows) {
-                    var matches = regex.Matches(tableRow);
+            foreach (var tableRow in tableRows) {
+                var matches = regex.Matches(tableRow);
 
-                    if (!matches.Any()) continue;
-                    if (columnsCount is not null && matches.Count != columnsCount) {
-                        return Result<List<List<string>>>.Fail(new ParseError(message:
-                            $"{columnsCount} columns are expected. But {matches.Count} columns have been identified.",
-                            moreDetails: new {tableRow}));
-                    }
-
-                    data.Add(matches.Select(match => match.Value).ToList());
+                if (!matches.Any()) continue;
+                if (columnsCount is not null && matches.Count != columnsCount) {
+                    return Result<List<List<string>>>.Fail(new ParseError(message:
+                        $"{columnsCount} columns are expected. But {matches.Count} columns have been identified.",
+                        moreDetails: new {tableRow}));
                 }
 
-                return Result<List<List<string>>>.Ok(data);
-            });
+                data.Add(matches.Select(match => match.Value).ToList());
+            }
+
+            return Result<List<List<string>>>.Ok(data);
+        });
 }
