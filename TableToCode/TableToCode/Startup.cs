@@ -14,15 +14,15 @@ using TableToCode.Program;
 namespace TableToCode;
 
 public static class Startup {
-    public static Task Main(string[] args) =>
-        TryExtensions.Try(() => InnerMainAsync(args))
+    public static void Main(string[] args) =>
+        TryExtensions.Try(() => InnerMain(args))
             .OnSuccess(() => Console.WriteLine("The operation was completed successfully."))
             .OnFail(result => {
                 Console.WriteLine(LogHelper.Log(result.Detail as ErrorDetail));
                 return result;
             });
 
-    private static async Task InnerMainAsync(string[] args) {
+    private static void InnerMain(string[] args) {
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -44,8 +44,6 @@ public static class Startup {
                 Console.WriteLine(LogHelper.Log(result.Detail as ErrorDetail));
                 return result;
             });
-
-        await host.RunAsync();
     }
 
     private static Result RunProgram(IServiceProvider services) {
