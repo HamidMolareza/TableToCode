@@ -6,7 +6,9 @@ using OnRail;
 using OnRail.Extensions.OnFail;
 using OnRail.Extensions.OnSuccess;
 using OnRail.Extensions.Try;
+using OnRail.ResultDetails;
 using TableToCode.Header;
+using TableToCode.Helpers;
 using TableToCode.Program;
 
 namespace TableToCode;
@@ -16,8 +18,7 @@ public static class Startup {
         TryExtensions.Try(() => InnerMainAsync(args))
             .OnSuccess(() => Console.WriteLine("The operation was completed successfully."))
             .OnFail(result => {
-                //TODO: Log Error
-                Console.WriteLine($"{result.Detail?.Title}\n{result.Detail?.Message}");
+                Console.WriteLine(LogHelper.Log(result.Detail as ErrorDetail));
                 return result;
             });
 
@@ -40,8 +41,7 @@ public static class Startup {
 
         RunProgram(host.Services)
             .OnFail(result => {
-                //TODO: Log Error
-                Console.WriteLine($"{result.Detail?.Title}\n{result.Detail?.Message}");
+                Console.WriteLine(LogHelper.Log(result.Detail as ErrorDetail));
                 return result;
             });
 
