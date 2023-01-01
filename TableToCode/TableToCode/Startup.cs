@@ -5,14 +5,13 @@ using Microsoft.Extensions.Logging;
 using OnRail;
 using OnRail.Extensions.Must;
 using OnRail.Extensions.OnFail;
-using OnRail.Extensions.OnSuccess;
 using OnRail.Extensions.Try;
 using OnRail.ResultDetails;
-using TableToCode.DataTable;
-using TableToCode.DefinitionTable;
 using TableToCode.Helpers;
 using TableToCode.Models;
 using TableToCode.Program;
+using TableToCode.TableData;
+using TableToCode.TableDefinition;
 using TableToCode.TypeConverter;
 
 namespace TableToCode;
@@ -20,41 +19,37 @@ namespace TableToCode;
 public static class Startup {
     public static void Main(string[] args) =>
         TryExtensions.Try(() => InnerMain(args))
-            .OnSuccess(() => Console.WriteLine("The operation was completed successfully."))
             .OnFail(result => {
                 Console.WriteLine(LogHelper.Log(result.Detail as ErrorDetail));
                 return result;
             });
 
-    private static void InnerMain(string[] args) {
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .Build();
+    private static Result InnerMain(string[] args) =>
+        TryExtensions.Try(() => {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
 
-        var configsResult = configuration.Get<Configs>()
-            .MustNotNull<Configs>()
-            .OnFailThrowException();
+            var configsResult = configuration.Get<Configs>()
+                .MustNotNull<Configs>()
+                .OnFailThrowException();
 
-        using var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices((_, services)
-                => services
-                    .AddSingleton(configsResult.Value!)
-                    .AddLogging(loggingBuilder => loggingBuilder
-                        .SetMinimumLevel(LogLevel.Trace)
-                        .AddConsole())
-                    .AddScoped<IProgram, ProgramService>()
-                    .AddScoped<IDefinitionTable, DefinitionTableService>()
-                    .AddScoped<ITypeConverter, TypeConverterService>()
-                    .AddScoped<IDataTable, DataTableService>())
-            .Build();
+            using var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((_, services)
+                    => services
+                        .AddSingleton(configsResult.Value!)
+                        .AddLogging(loggingBuilder => loggingBuilder
+                            .SetMinimumLevel(LogLevel.Trace)
+                            .AddConsole())
+                        .AddScoped<IProgram, ProgramService>()
+                        .AddScoped<ITableDefinition, TableDefinitionService>()
+                        .AddScoped<ITypeConverter, TypeConverterService>()
+                        .AddScoped<IDataTable, TableDataService>())
+                .Build();
 
-        RunProgram(host.Services)
-            .OnFail(result => {
-                Console.WriteLine(LogHelper.Log(result.Detail as ErrorDetail));
-                return result;
-            });
-    }
+            return RunProgram(host.Services);
+        });
 
     private static Result RunProgram(IServiceProvider services) {
         using var serviceScope = services.CreateScope();

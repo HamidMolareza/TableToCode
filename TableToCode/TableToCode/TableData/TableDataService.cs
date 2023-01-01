@@ -4,12 +4,12 @@ using OnRail.Extensions.Try;
 using TableToCode.ErrorDetails;
 using TableToCode.Models;
 
-namespace TableToCode.DataTable;
+namespace TableToCode.TableData;
 
-public class DataTableService : IDataTable {
+public class TableDataService : IDataTable {
     private readonly Configs _config;
 
-    public DataTableService(Configs configs) {
+    public TableDataService(Configs configs) {
         _config = configs;
     }
 
@@ -30,6 +30,7 @@ public class DataTableService : IDataTable {
                 }
 
                 data.Add(matches.Select(match => match.Value).ToList());
+                columnsCount ??= matches.Count;
             }
 
             return Result<List<List<string>>>.Ok(data);

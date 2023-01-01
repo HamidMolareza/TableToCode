@@ -1,4 +1,4 @@
-namespace TableToCode.TypeConverter; 
+namespace TableToCode.TypeConverter;
 
 public class ConvertTypesModel {
     public string Key { get; set; }

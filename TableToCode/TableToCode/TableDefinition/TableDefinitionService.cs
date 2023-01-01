@@ -8,13 +8,13 @@ using TableToCode.ErrorDetails;
 using TableToCode.Models;
 using TableToCode.TypeConverter;
 
-namespace TableToCode.DefinitionTable;
+namespace TableToCode.TableDefinition;
 
-public class DefinitionTableService : IDefinitionTable {
+public class TableDefinitionService : ITableDefinition {
     private readonly Configs _config;
     private readonly ITypeConverter _typeConverter;
 
-    public DefinitionTableService(Configs configs, ITypeConverter typeConverter) {
+    public TableDefinitionService(Configs configs, ITypeConverter typeConverter) {
         _config = configs;
         _typeConverter = typeConverter;
     }
@@ -47,15 +47,19 @@ public class DefinitionTableService : IDefinitionTable {
         };
     }
 
-    private static Result<string> GenerateScriptForPostgres(string tableName, List<TableColumn> tableColumns) =>
+    private Result<string> GenerateScriptForPostgres(string tableName, List<TableColumn> tableColumns) =>
         TryExtensions.Try(() => {
             var sb = new StringBuilder();
             sb.AppendLine("-- Create Items")
                 .AppendLine($"Create table If Not Exists {tableName}")
                 .AppendLine("(");
 
-            foreach (var tableColumn in tableColumns)
-                sb.AppendLine($"\t{tableColumn.ColumnName}\t{tableColumn.ColumnType},");
+            foreach (var tableColumn in tableColumns) {
+                _typeConverter.Convert(tableColumn.ColumnType, "postgres")
+                    .OnSuccessTee(type => sb.AppendLine($"\t{tableColumn.ColumnName}\t{type},"))
+                    .OnFailThrowException();
+            }
+
             sb.Remove(sb.Length - 2, 1); //Remove last ,
 
             sb.AppendLine(");")
