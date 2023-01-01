@@ -13,6 +13,7 @@ using TableToCode.DefinitionTable;
 using TableToCode.Helpers;
 using TableToCode.Models;
 using TableToCode.Program;
+using TableToCode.TypeConverter;
 
 namespace TableToCode;
 
@@ -44,6 +45,7 @@ public static class Startup {
                         .AddConsole())
                     .AddScoped<IProgram, ProgramService>()
                     .AddScoped<IDefinitionTable, DefinitionTableService>()
+                    .AddScoped<ITypeConverter, TypeConverterService>()
                     .AddScoped<IDataTable, DataTableService>())
             .Build();
 
