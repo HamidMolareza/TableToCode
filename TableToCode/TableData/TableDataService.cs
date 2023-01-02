@@ -64,7 +64,7 @@ public class TableDataService : ITableData {
                     .Append($"    public DbSet<{tableNameCamelCase}> {tableNameCamelCase}s")
                     .AppendLine(" { get; set; } = null!;")
                     .AppendLine()
-                    .AppendLine($"    public static async Task SeedDataAsync({contextName} db) ")
+                    .Append($"    public static async Task SeedDataAsync({contextName} db) ").AppendLine("{")
                     .Append($"        var {itemsName} = new {tableNameCamelCase}[]").AppendLine(" {");
 
                 foreach (var row in tableData) {
