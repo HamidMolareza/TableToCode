@@ -14,17 +14,17 @@ namespace TableToCode.Program;
 public class ProgramService : IProgram {
     private readonly ITableDefinition _tableDefinition;
     private readonly ILogger<ProgramService> _logger;
-    private readonly IDataTable _dataTable;
+    private readonly ITableData _tableData;
     private readonly Configs _configs;
     private readonly Table _table = new();
     private string? _targetLanguage;
 
-    public ProgramService(ILogger<ProgramService> logger, ITableDefinition tableDefinition, IDataTable dataTable,
+    public ProgramService(ILogger<ProgramService> logger, ITableDefinition tableDefinition, ITableData tableData,
         Configs configs) {
         _configs = configs;
         _logger = logger;
         _tableDefinition = tableDefinition;
-        _dataTable = dataTable;
+        _tableData = tableData;
     }
 
     public Result Run() =>
@@ -33,7 +33,7 @@ public class ProgramService : IProgram {
                 .OnSuccessTee(tableColumns => _table.Columns = tableColumns)
             )
             .OnSuccess(() => Utility.GetTableFromConsole("Input table data (without column names): ")
-                .OnSuccess(_dataTable.Parse)
+                .OnSuccess(_tableData.Parse)
                 .OnSuccess(tableData => _table.Data = tableData)
             ).OnSuccess(() => GetValidTableName()
                 .OnSuccess(tableName => _table.Name = tableName)
@@ -42,7 +42,8 @@ public class ProgramService : IProgram {
             )
             .OnSuccess(() => _tableDefinition.GenerateScript(_table.Name, _table.Columns, _targetLanguage!)
                 .OnSuccess(script => Console.WriteLine(script))
-            );
+            ).OnSuccess(() => _tableData.GenerateScript(_table.Name, _table.Data, _targetLanguage!, _table.Columns)
+                .OnSuccess(script => Console.WriteLine(script)));
 
     private Result<string> GetValidTableName() {
         var regex = new Regex(_configs.ValidTableNameRegex);

@@ -39,13 +39,12 @@ public class TableDefinitionService : ITableDefinition {
             return Result<List<TableColumn>>.Ok(columns);
         });
 
-    public Result<string> GenerateScript(string tableName, List<TableColumn> tableColumns, string language) {
-        return language.ToLower() switch {
+    public Result<string> GenerateScript(string tableName, List<TableColumn> tableColumns, string language) =>
+        language.ToLower() switch {
             "postgres" => GenerateScriptForPostgres(tableName, tableColumns),
             "csharp" => GenerateScriptForCsharp(tableName, tableColumns),
             _ => Result<string>.Fail(new NotSupportedError($"{language} is not supported."))
         };
-    }
 
     private Result<string> GenerateScriptForPostgres(string tableName, List<TableColumn> tableColumns) =>
         TryExtensions.Try(() => {

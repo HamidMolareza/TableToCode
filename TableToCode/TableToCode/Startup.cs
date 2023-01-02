@@ -45,7 +45,7 @@ public static class Startup {
                         .AddScoped<IProgram, ProgramService>()
                         .AddScoped<ITableDefinition, TableDefinitionService>()
                         .AddScoped<ITypeConverter, TypeConverterService>()
-                        .AddScoped<IDataTable, TableDataService>())
+                        .AddScoped<ITableData, TableDataService>())
                 .Build();
 
             return RunProgram(host.Services);
