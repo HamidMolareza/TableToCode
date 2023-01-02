@@ -4,7 +4,9 @@ using OnRail;
 using OnRail.Extensions.OnFail;
 using OnRail.Extensions.OnSuccess;
 using OnRail.Extensions.Try;
+using OnRail.ResultDetails;
 using TableToCode.ErrorDetails;
+using TableToCode.Helpers;
 using TableToCode.Models;
 using TableToCode.TypeConverter;
 
@@ -47,38 +49,44 @@ public class TableDefinitionService : ITableDefinition {
         };
 
     private Result<string> GenerateScriptForPostgres(string tableName, List<TableColumn> tableColumns) =>
-        TryExtensions.Try(() => {
-            var sb = new StringBuilder();
-            sb.AppendLine("-- Create Items")
-                .AppendLine($"Create table If Not Exists {tableName}")
-                .AppendLine("(");
+        TryExtensions.Try(tableName.ConvertToCamelCase)
+            .OnSuccess(tableNameCamelCase => {
+                var sb = new StringBuilder();
+                sb.AppendLine("-- Create Items")
+                    .AppendLine($"Create table If Not Exists {tableNameCamelCase}")
+                    .AppendLine("(");
 
-            foreach (var tableColumn in tableColumns) {
-                _typeConverter.Convert(tableColumn.ColumnType, "postgres")
-                    .OnSuccessTee(type => sb.AppendLine($"\t{tableColumn.ColumnName}\t{type},"))
-                    .OnFailThrowException();
-            }
+                foreach (var tableColumn in tableColumns) {
+                    _typeConverter.Convert(tableColumn.ColumnType, "postgres")
+                        .OnSuccessTee(type => sb.AppendLine($"\t{tableColumn.ColumnName}\t{type},"))
+                        .OnFailThrowException();
+                }
 
-            sb.Remove(sb.Length - 2, 1); //Remove last ,
+                sb.Remove(sb.Length - 2, 1); //Remove last ,
 
-            sb.AppendLine(");")
-                .AppendLine($"Truncate table {tableName};");
-            return sb.ToString();
-        });
+                sb.AppendLine(");")
+                    .AppendLine($"Truncate table {tableNameCamelCase};");
+                return sb.ToString();
+            });
 
     private Result<string> GenerateScriptForCsharp(string tableName, List<TableColumn> tableColumns) =>
         TryExtensions.Try(() => {
             var sb = new StringBuilder();
-            sb.Append($"public class {tableName} ").AppendLine("{");
-
+            tableName.ConvertToCamelCase()
+                .OnSuccess(tableNameCamelCase =>
+                    sb.Append($"public class {tableNameCamelCase} ").AppendLine("{"));
+            return sb;
+        }).OnSuccess(sb => {
             foreach (var tableColumn in tableColumns) {
-                _typeConverter.Convert(tableColumn.ColumnType, "csharp")
-                    .OnSuccessTee(type =>
-                        sb.Append($"public {type} {tableColumn.ColumnName} ").AppendLine("{ get; set; }"))
-                    .OnFailThrowException();
+                var result = _typeConverter.Convert(tableColumn.ColumnType, "csharp")
+                    .OnSuccessTee(type => tableColumn.ColumnName.ConvertToCamelCase()
+                        .OnSuccess(columnName =>
+                            sb.Append($"public {type} {columnName} ").AppendLine("{ get; set; }")));
+                if (!result.IsSuccess)
+                    return Result<string>.Fail(result.Detail as ErrorDetail);
             }
 
             sb.AppendLine("}");
-            return sb.ToString();
+            return Result<string>.Ok(sb.ToString());
         });
 }

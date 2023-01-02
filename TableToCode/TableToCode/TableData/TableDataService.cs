@@ -129,21 +129,37 @@ public class TableDataService : ITableData {
 
     private static Result<string> GenerateScriptForPostgres(string tableName,
         IReadOnlyCollection<List<string>> tableData,
-        IReadOnlyCollection<TableColumn> tableColumns) =>
-        TryExtensions.Try(() => {
-            var sb = new StringBuilder();
-            sb.Append($"insert into {tableName} (")
-                .AppendLine($"{string.Join(", ", tableColumns.Select(column => column.ColumnName))})")
-                .Append("values ");
+        List<TableColumn> tableColumns) =>
+        TryExtensions.Try(tableName.ConvertToCamelCase)
+            .OnSuccess(tableNameCamelCase => {
+                var sb = new StringBuilder();
+                sb.Append($"insert into {tableNameCamelCase} (")
+                    .AppendLine($"{string.Join(", ", tableColumns.Select(column => column.ColumnName))})")
+                    .Append("values ");
 
-            var dataWithQuotation = tableData.Select(row => row.Select(column => $"'{column}'"));
-            foreach (var row in dataWithQuotation)
-                sb.AppendLine($"({string.Join(", ", row)}), ");
+                var data = tableData.Select(row => {
+                    var rowValues = new List<string>(row.Count);
+                    for (var i = 0; i < row.Count; i++)
+                        rowValues.Add(GetValueFormattedForPostgres(row[i], tableColumns[i].ColumnType));
 
-            //Remove last , 
-            sb.Remove(sb.Length - 3, 3)
-                .AppendLine(";");
+                    return rowValues;
+                });
 
-            return sb.ToString();
-        });
+                foreach (var row in data)
+                    sb.AppendLine($"({string.Join(", ", row)}), ");
+
+                //Remove last , 
+                sb.Remove(sb.Length - 3, 3)
+                    .AppendLine(";");
+
+                sb.AppendLine()
+                    .AppendLine("-- Remove Data")
+                    .AppendLine($"DROP TABLE {tableNameCamelCase};");
+
+                return sb.ToString();
+            });
+
+    private static string GetValueFormattedForPostgres(string value, string type) {
+        return value.ToLower() == "null" ? "Null" : $"'{value}'";
+    }
 }
